@@ -1,41 +1,33 @@
-const express = require("express");
-const app = express();
+const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcrypt");
-const initializePassport = require("./passport-config");
 
-const users = [];
+function initialize(passport, getUserByEmail, getUserById) {
+  // Function to authenticate users
+  const authenticateUsers = async (email, password, done) => {
+    // Get users by email
+    const user = getUserByEmail(email);
+    if (user == null) {
+      return done(null, false, { message: "No user found with that email" });
+    }
+    try {
+      if (await bcrypt.compare(password, user.password)) {
+        return done(null, user);
+      } else {
+        return done(null, false, { message: "Password Incorrect" });
+      }
+    } catch (e) {
+      console.log(e);
+      return done(e);
+    }
+  };
 
-app.use(express.urlencoded({ extended: false }));
+  passport.use(
+    new LocalStrategy({ usernameField: "email" }, authenticateUsers)
+  );
+  passport.serializeUser((user, done) => done(null, user.id));
+  passport.deserializeUser((id, done) => {
+    return done(null, getUserById(id));
+  });
+}
 
-//Routes
-app.post("/register", async (req, res) => {
-  try {
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    users.push({
-      id: Date.now().toString(),
-      name: req.body.name,
-      email: req.body.email,
-      password: hashedPassword,
-    });
-    console.log(users);
-    res.redirect("/login");
-  } catch (error) {
-    console.log(error);
-    res.redirect("/register");
-  }
-});
-
-app.get("/", (req, res) => {
-  res.render("index.ejs");
-});
-
-app.get("/login", (req, res) => {
-  res.render("login.ejs");
-});
-
-app.get("/register", (req, res) => {
-  res.render("register.ejs");
-});
-//End Routes
-
-app.listen(3000);
+module.exports = initialize;
