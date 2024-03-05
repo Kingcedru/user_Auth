@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 
+//Routes
 app.get("/", (req, res) => {
   res.render("index.ejs");
 });
@@ -12,5 +13,6 @@ app.get("/login", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("register.ejs");
 });
+//End Routes
 
 app.listen(3000);
